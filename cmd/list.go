@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -32,27 +31,15 @@ type ListResp struct {
 
 func List(remotePath string) error {
 	log.Println("List for ", remotePath)
-	tk, err := getReqToken()
-	if err != nil {
-		return err
-	}
-	var bearer = "Bearer " + tk
 	url := conf.Current.ServiceURL + "Api/List"
 	lr := ListReq{
 		Path: remotePath,
 	}
-	b, err := json.Marshal(lr)
-	if err != nil {
-		return err
-	}
-	reader := bytes.NewReader(b)
-	req, err := http.NewRequest("POST", url, reader)
-	if err != nil {
-		return err
-	}
-	req.Header.Add("Authorization", bearer)
-	req.Header.Add("Accept", "application/json")
 
+	req, err := getRequestWithAuthHeader(url, lr)
+	if err != nil {
+		return err
+	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {

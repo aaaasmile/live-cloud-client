@@ -63,3 +63,23 @@ func getReqToken() (string, error) {
 
 	return tk, nil
 }
+
+func getRequestWithAuthHeader(url string, payload interface{}) (*http.Request, error) {
+	tk, err := getReqToken()
+	if err != nil {
+		return nil, err
+	}
+	var bearer = "Bearer " + tk
+	b, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	reader := bytes.NewReader(b)
+	req, err := http.NewRequest("POST", url, reader)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Authorization", bearer)
+	req.Header.Add("Accept", "application/json")
+	return req, nil
+}
