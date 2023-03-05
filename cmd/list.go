@@ -38,13 +38,14 @@ type CredentialResponse struct {
 type CredentialReq struct {
 	Username string
 	Password string
+	UserHash string
 }
 
 func getReqToken() (string, error) {
 	url := conf.Current.ServiceURL + "Token"
 	cr := CredentialReq{
 		Username: conf.Current.Username,
-		Password: conf.Current.UserHash,
+		UserHash: conf.Current.UserHash,
 	}
 	b, err := json.Marshal(cr)
 	if err != nil {
