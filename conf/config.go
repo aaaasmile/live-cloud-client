@@ -13,6 +13,7 @@ type Config struct {
 	MySecret   string
 	KeyFname   string
 	UserHash   string
+	Username   string
 	ServiceURL string
 	rootPath   string
 }
