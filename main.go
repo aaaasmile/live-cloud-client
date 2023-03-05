@@ -25,10 +25,15 @@ func main() {
 	if err != nil {
 		log.Fatal("Config file error: ", err)
 	}
+	nothing_done := true
 	if *list != "" {
 		if err := cmd.List(*list); err != nil {
 			log.Fatal("Error on list: ", err)
 		}
+		nothing_done = false
+	}
+	if nothing_done {
+		log.Println("WARNING: nothing done because no command was recognized")
 	}
 
 	log.Println("That's all folks!")

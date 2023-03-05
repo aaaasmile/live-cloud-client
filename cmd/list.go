@@ -4,11 +4,31 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"live-cloud-client/conf"
 	"log"
 	"net/http"
 )
+
+type ResType int
+
+const (
+	RTFile = iota
+	RTDir
+)
+
+type Resource struct {
+	Name string
+	Type ResType
+}
+
+type ListReq struct {
+	Path string
+}
+
+type ListResp struct {
+	Resources []Resource
+}
 
 func List(remotePath string) error {
 	log.Println("List for ", remotePath)
@@ -16,61 +36,43 @@ func List(remotePath string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("*** token: ", tk)
-	return nil
-}
-
-type Token struct {
-	AccessToken   string `json:"access_token"`
-	RefreshToken  string `json:"refresh_token"`
-	TokenType     string `json:"token_type"`
-	Expire        string `json:"expiry"`
-	RefreshExpire string `json:"refresh_expiry"`
-}
-
-type CredentialResponse struct {
-	Info       string
-	ResultCode int
-	Username   string
-	Token      Token
-}
-
-type CredentialReq struct {
-	Username string
-	Password string
-	UserHash string
-}
-
-func getReqToken() (string, error) {
-	url := conf.Current.ServiceURL + "Token"
-	cr := CredentialReq{
-		Username: conf.Current.Username,
-		UserHash: conf.Current.UserHash,
+	var bearer = "Bearer " + tk
+	url := conf.Current.ServiceURL + "Api/List"
+	lr := ListReq{
+		Path: remotePath,
 	}
-	b, err := json.Marshal(cr)
+	b, err := json.Marshal(lr)
 	if err != nil {
-		return "", err
+		return err
 	}
 	reader := bytes.NewReader(b)
-	resp, err := http.Post(url, "application/json", reader)
+	req, err := http.NewRequest("POST", url, reader)
 	if err != nil {
-		return "", err
+		return err
 	}
+	req.Header.Add("Authorization", bearer)
+	req.Header.Add("Accept", "application/json")
 
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
 	defer resp.Body.Close()
-	rawbody, err := ioutil.ReadAll(resp.Body)
+
+	rawbody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return err
 	}
+
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("error on token request: %s", string(rawbody))
+		return fmt.Errorf("error on List request: %s", string(rawbody))
 	}
-	creResp := CredentialResponse{}
-	if err := json.Unmarshal(rawbody, &creResp); err != nil {
-		return "", err
+	listResp := ListResp{}
+	if err := json.Unmarshal(rawbody, &listResp); err != nil {
+		return err
 	}
 
-	tk := creResp.Token.AccessToken
-
-	return tk, nil
+	fmt.Println("*** list: ", listResp)
+	return nil
 }
